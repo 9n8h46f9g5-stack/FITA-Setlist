@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- saved from url=(0045)file:///Users/ole.feltes/Downloads/index.html -->
+<!-- saved from url=(0047)file:///Users/ole.feltes/Downloads/index_2.html -->
 <html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -519,12 +519,12 @@ function buildSet(id){
   let sn=0,prevTune=null;
   setlist.forEach(item=>{
     if(item.type==='block'){
-      const el=document.createElement('div');el.className='blk-item';el.draggable=true;
+      const el=document.createElement('div');el.className='blk-item';el.draggable=true;el.dataset.id=item.id;
       el.innerHTML=`<span class="bgh">&#8942;</span><div class="bline"></div><span class="blabel" onclick="editBlockLabel('${item.id}')">${item.label||'Break'}</span><span class="bpause" onclick="editBlockPause('${item.id}')">&#9749; ${item.pause||'3:00'}</span><div class="bline"></div><button class="srm" onclick="removeById('${item.id}')">&#10005;</button>`;
       addDrag(el,item);sl.appendChild(el);prevTune=null;
     } else {
       sn++;const retune=prevTune&&prevTune!==item.tune;prevTune=item.tune;
-      const el=document.createElement('div');el.className='sitem';el.draggable=true;
+      const el=document.createElement('div');el.className='sitem';el.draggable=true;el.dataset.id=item.id;
       el.innerHTML=`<span class="gh">&#8942;</span><span class="snum">${sn}</span><span class="sttl" title="${item.title}">${item.title}</span>${retune?'<span class="rtbadge">retune</span>':''}<span class="stune2 ${tuneClass(item.tune)}" onclick="editTuning('${item.id}')" title="Click to edit tuning">${item.tune}</span><span class="sdur2" onclick="editDuration('${item.id}')" title="Click to edit duration">${item.dur}</span><button class="srm" onclick="removeById('${item.id}')">&#10005;</button>`;
       addDrag(el,item);sl.appendChild(el);
     }
