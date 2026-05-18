@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Fire In The Attic – Setlist Builder</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+<style>
+  :root {
+    --color-bg: #f8f8f8;
+    --color-surface: #ffffff;
+    --color-surface-2: #f1f1f1;
+    --color-border: #e0e0e0;
+    --color-border-2: #cccccc;
+    --color-text: #1a1a1a;
+    --color-text-2: #555555;
+    --color-text-3: #999999;
+    --color-accent: #c0392b;
+    --color-success-bg: #eafaf1;
+    --color-success-border: #27ae60;
+    --color-success-text: #1e8449;
+    --color-warn-bg: #fef9e7;
+    --color-warn-text: #b7770d;
+    --color-danger-bg: #fdf0ee;
+    --color-danger-border: #e74c3c;
+    --color-danger-text: #c0392b;
+    --color-info-bg: #eaf4fd;
+    --color-info-border: #2e86c1;
+    --color-info-text: #1a5276;
+    --radius: 8px;
+    --radius-sm: 5px;
+  }
+  @media(prefers-color-scheme: dark){
+    :root{
+      --color-bg: #111111;
+      --color-surface: #1c1c1c;
+      --color-surface-2: #252525;
+      --color-border: #2e2e2e;
+      --color-border-2: #3a3a3a;
+      --color-text: #f0f0f0;
+      --color-text-2: #aaaaaa;
+      --color-text-3: #666666;
+      --color-accent: #e74c3c;
+      --color-success-bg: #0d2a0d;
+      --color-success-border: #27ae60;
+      --color-success-text: #2ecc71;
+      --color-warn-bg: #2a1e00;
+      --color-warn-text: #f0a500;
+      --color-danger-bg: #2a0a0a;
+      --color-danger-border: #e74c3c;
+      --color-danger-text: #e74c3c;
+      --color-info-bg: #0d1e2e;
+      --color-info-border: #2e86c1;
+      --color-info-text: #4a9eff;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--color-bg);color:var(--color-text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px}
+
+  /* ── LAYOUT ── */
+  .app{display:grid;grid-template-columns:1fr 1fr;height:100vh;max-height:100vh;overflow:hidden}
+  .panel{display:flex;flex-direction:column;overflow:hidden;background:var(--color-surface)}
+  .panel-left{border-right:1px solid var(--color-border)}
+
+  /* ── HEADER ── */
+  .ph{padding:12px 14px;background:var(--color-surface-2);border-bottom:1px solid var(--color-border);flex-shrink:0}
+  .ptitle{font-size:14px;font-weight:600;color:var(--color-text)}
+  .psub{font-size:11px;color:var(--color-text-3);margin-top:2px}
+
+  /* ── TIMER & TARGET ── */
+  .timer-row{display:flex;align-items:center;gap:10px;margin-top:8px}
+  .tval{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--color-text)}
+  .tval.over{color:var(--color-danger-text)}
+  .tbadge{font-size:11px;padding:2px 8px;border-radius:20px;background:var(--color-danger-bg);color:var(--color-danger-text);border:1px solid var(--color-danger-border);display:none}
+  .tbadge.show{display:inline-block}
+  .target-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--color-border)}
+  .target-lbl{font-size:11px;color:var(--color-text-2);white-space:nowrap}
+  .target-inp{width:66px;padding:3px 8px;border:1px solid var(--color-border-2);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text);font-size:12px;font-variant-numeric:tabular-nums;text-align:center}
+  .target-inp:focus{outline:none;border-color:var(--color-info-border)}
+  .target-bar-wrap{flex:1;height:6px;background:var(--color-surface-2);border-radius:20px;overflow:hidden;border:1px solid var(--color-border)}
+  .target-bar{height:100%;border-radius:20px;background:var(--color-success-border);transition:width .3s,background .3s}
+  .target-bar.warn{background:#f0a500}
+  .target-bar.over{background:var(--color-danger-border)}
+  .target-pct{font-size:11px;font-variant-numeric:tabular-nums;min-width:34px;text-align:right;color:var(--color-text-2)}
+
+  /* ── SCROLL AREA ── */
+  .scroll{overflow-y:auto;flex:1;padding:8px}
+  .scroll::-webkit-scrollbar{width:5px}
+  .scroll::-webkit-scrollbar-track{background:transparent}
+  .scroll::-webkit-scrollbar-thumb{background:var(--color-border-2);border-radius:3px}
+
+  /* ── ALBUM LABEL ── */
+  .alb-lbl{font-size:12px;font-weight:700;color:var(--color-text);padding:8px 8px 4px 11px;position:sticky;top:0;background:var(--color-surface);z-index:2;margin-top:4px;display:flex;align-items:baseline;gap:6px;border-left:3px solid var(--color-accent)}
+  .alb-year{font-size:10px;font-weight:400;color:var(--color-text-3)}
+
+  /* ── SONG ITEM (catalogue) ── */
+  .si{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:var(--radius-sm);cursor:pointer;border:1px solid transparent;margin:2px 0;user-select:none;transition:background .1s}
+  .si:hover{background:var(--color-surface-2)}
+  .si.sel{background:var(--color-success-bg);border-color:var(--color-success-border)}
+  .si.sel .stitle{color:var(--color-success-text)}
+  .stitle{font-size:12px;flex:1;line-height:1.3;color:var(--color-text)}
+  .sdur{font-size:11px;color:var(--color-text-3);font-variant-numeric:tabular-nums;flex-shrink:0;width:32px;text-align:right}
+  .stune{font-size:10px;padding:1px 5px;border-radius:20px;flex-shrink:0;width:70px;text-align:center}
+  .abtn{width:20px;height:20px;border-radius:50%;border:1px solid var(--color-border-2);background:var(--color-surface-2);color:var(--color-text-2);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .1s}
+  .si:hover .abtn{background:var(--color-info-bg);color:var(--color-info-text);border-color:var(--color-info-border)}
+  .si.sel .abtn{background:var(--color-danger-bg);color:var(--color-danger-text);border-color:var(--color-danger-border)}
+
+  /* ── TUNING BADGES ── */
+  .ts{background:var(--color-surface-2);color:var(--color-text-3)}
+  .td{background:var(--color-warn-bg);color:var(--color-warn-text)}
+  .ta{background:var(--color-danger-bg);color:var(--color-danger-text)}
+
+  /* ── SETLIST AREA ── */
+  .setarea{flex:1;overflow-y:auto;padding:8px}
+  .setarea::-webkit-scrollbar{width:5px}
+  .setarea::-webkit-scrollbar-track{background:transparent}
+  .setarea::-webkit-scrollbar-thumb{background:var(--color-border-2);border-radius:3px}
+  .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--color-text-3);font-size:13px;gap:8px}
+  .empty i{font-size:32px;opacity:0.25}
+
+  /* ── SETLIST SONG ROW ── */
+  .sitem{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:var(--radius-sm);background:var(--color-surface);border:1px solid var(--color-border);margin:2px 0;cursor:grab;transition:border-color .1s}
+  .sitem:hover{border-color:var(--color-border-2)}
+  .sitem:active{cursor:grabbing}
+  .sitem.dragging{opacity:0.3}
+  .sitem.dot{border-top:2px solid var(--color-info-border)}
+  .sitem.dob{border-bottom:2px solid var(--color-info-border)}
+  .snum{font-size:11px;color:var(--color-text-3);width:16px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+  .gh{color:var(--color-text-3);font-size:14px;flex-shrink:0}
+  .sttl{font-size:12px;flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--color-text)}
+  .sdur2{font-size:11px;color:var(--color-text-2);font-variant-numeric:tabular-nums;flex-shrink:0;cursor:pointer;padding:2px 5px;border-radius:4px;width:34px;text-align:center;transition:background .1s}
+  .sdur2:hover{background:var(--color-info-bg);color:var(--color-info-text)}
+  .stune2{font-size:10px;padding:1px 6px;border-radius:20px;flex-shrink:0;cursor:pointer;width:70px;text-align:center;transition:opacity .1s}
+  .stune2:hover{opacity:0.7}
+  .srm{width:18px;height:18px;border-radius:50%;border:none;background:transparent;color:var(--color-text-3);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:color .1s}
+  .srm:hover{color:var(--color-danger-text)}
+  .rtbadge{font-size:10px;padding:1px 5px;border-radius:20px;background:var(--color-warn-bg);color:var(--color-warn-text);flex-shrink:0}
+
+  /* ── BLOCK BREAK ── */
+  .blk-item{display:flex;align-items:center;gap:7px;margin:5px 0;cursor:grab;padding:4px 6px;border-radius:var(--radius-sm);border:1px solid transparent;transition:background .1s}
+  .blk-item:hover{background:var(--color-surface-2);border-color:var(--color-border)}
+  .blk-item:active{cursor:grabbing}
+  .blk-item.dragging{opacity:0.3}
+  .blk-item.dot{border-top:2px solid var(--color-info-border)}
+  .blk-item.dob{border-bottom:2px solid var(--color-info-border)}
+  .bline{flex:1;height:1px;background:var(--color-border-2)}
+  .blabel{font-size:11px;color:var(--color-text-2);padding:2px 10px;border-radius:20px;border:1px solid var(--color-border-2);background:var(--color-surface-2);cursor:pointer;white-space:nowrap;transition:border-color .1s}
+  .blabel:hover{border-color:var(--color-text-2);color:var(--color-text)}
+  .bpause{font-size:10px;color:var(--color-text-3);cursor:pointer;white-space:nowrap;padding:2px 6px;border-radius:4px;transition:background .1s}
+  .bpause:hover{background:var(--color-surface-2);color:var(--color-text-2)}
+  .bgh{color:var(--color-text-3);font-size:14px;flex-shrink:0}
+
+  /* ── TOOLBARS ── */
+  .tbar{padding:8px 12px;border-top:1px solid var(--color-border);display:flex;gap:6px;flex-wrap:nowrap;flex-shrink:0;background:var(--color-surface-2)}
+  .sbar{padding:8px 12px;border-top:1px solid var(--color-border);display:flex;gap:6px;align-items:center;flex-shrink:0;background:var(--color-surface-2)}
+  .lbar{padding:8px 12px;border-top:1px solid var(--color-border);flex-shrink:0;background:var(--color-surface-2)}
+
+  /* ── BUTTONS ── */
+  .tbtn{font-size:12px;padding:6px 10px;border:1px solid var(--color-border-2);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;transition:background .1s,border-color .1s}
+  .tbtn:hover{background:var(--color-surface-2);border-color:var(--color-text-3)}
+  .tbtn:active{transform:scale(0.98)}
+  .tbtn.flex1{flex:1;justify-content:center}
+  .tbtn.solo{flex:none}
+  .tbtn.accent{border-color:var(--color-info-border);color:var(--color-info-text);background:var(--color-info-bg)}
+  .tbtn.accent:hover{opacity:0.85}
+  .tbtn.wide{width:100%;justify-content:center}
+  .sel-ver{font-size:12px;padding:5px 8px;border:1px solid var(--color-border-2);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text);cursor:pointer;max-width:140px}
+  .ver-lbl{font-size:11px;color:var(--color-text-2);flex-shrink:0}
+
+  /* ── MOBILE ── */
+  .mobile{display:none;flex-direction:column;height:100dvh}
+  .mob-header{padding:10px 14px;background:var(--color-surface-2);border-bottom:1px solid var(--color-border);flex-shrink:0}
+  .mob-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .mob-tabs{display:flex;gap:5px;margin-top:8px}
+  .mob-tab{flex:1;padding:7px;border:1px solid var(--color-border-2);border-radius:var(--radius-sm);background:transparent;color:var(--color-text-2);font-size:12px;font-weight:500;cursor:pointer;text-align:center;display:flex;align-items:center;justify-content:center;gap:5px;transition:background .1s}
+  .mob-tab.active{background:var(--color-surface);color:var(--color-text);border-color:var(--color-text-2)}
+  .mob-panel{flex:1;overflow:hidden;display:flex;flex-direction:column}
+  .mob-pane{display:none;flex:1;flex-direction:column;overflow:hidden}
+  .mob-pane.active{display:flex}
+  .mob-target{display:flex;align-items:center;gap:6px}
+
+  /* ── MODAL ── */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:200}
+  .modal{background:var(--color-surface);border:1px solid var(--color-border-2);border-radius:var(--radius);padding:20px;min-width:270px;max-width:340px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,0.18)}
+  .modal h3{font-size:14px;font-weight:600;margin-bottom:14px;color:var(--color-text)}
+  .modal input,.modal select{width:100%;padding:8px 10px;border:1px solid var(--color-border-2);border-radius:var(--radius-sm);background:var(--color-surface);color:var(--color-text);font-size:13px;margin-bottom:10px}
+  .modal input:focus,.modal select:focus{outline:none;border-color:var(--color-info-border)}
+  .modal-btns{display:flex;gap:8px;justify-content:flex-end}
+  .mbtn{font-size:12px;padding:6px 14px;border:1px solid var(--color-border-2);border-radius:var(--radius-sm);background:var(--color-surface-2);color:var(--color-text);cursor:pointer;transition:background .1s}
+  .mbtn:hover{border-color:var(--color-text-2)}
+  .mbtn.ok{border-color:var(--color-info-border);color:var(--color-info-text);background:var(--color-info-bg)}
+
+  @media(max-width:640px){
+    .app{display:none}
+    .mobile{display:flex}
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ DESKTOP ═══ -->
+<div class="app">
+  <!-- LEFT: Catalogue -->
+  <div class="panel panel-left">
+    <div class="ph">
+      <div class="ptitle">Song catalogue</div>
+      <div class="psub">Click a song to add · click again to remove</div>
+    </div>
+    <div class="scroll" id="cat-d"></div>
+    <div class="lbar">
+      <button class="tbtn wide" onclick="openAddSong()"><i class="ti ti-plus"></i> Add custom song</button>
+    </div>
+  </div>
+  <!-- RIGHT: Setlist -->
+  <div class="panel">
+    <div class="ph">
+      <div class="ptitle">Setlist</div>
+      <div class="timer-row">
+        <span class="tval" id="tval-d">0:00</span>
+        <span class="tbadge" id="badge-d">over set duration</span>
+      </div>
+      <div class="target-row">
+        <span class="target-lbl">Set duration</span>
+        <input class="target-inp" id="target-d" type="text" value="90:00" oninput="updateTimer()"/>
+        <div class="target-bar-wrap"><div class="target-bar" id="bar-d" style="width:0%"></div></div>
+        <span class="target-pct" id="pct-d">0%</span>
+      </div>
+    </div>
+    <div class="setarea" id="set-d"></div>
+    <div class="tbar">
+      <button class="tbtn flex1" onclick="addBlock()"><i class="ti ti-layout-rows"></i> Block break</button>
+      <button class="tbtn flex1" onclick="clearAll()"><i class="ti ti-trash"></i> Clear</button>
+      <button class="tbtn flex1 accent" onclick="exportPDF()"><i class="ti ti-file-text"></i> Print / PDF</button>
+    </div>
+    <div class="sbar">
+      <span class="ver-lbl">Version:</span>
+      <select class="sel-ver" id="ver-d" onchange="loadVersion(this.value)"></select>
+      <button class="tbtn solo" onclick="saveVersion()"><i class="ti ti-device-floppy"></i> Save</button>
+      <button class="tbtn solo" onclick="deleteVersion()"><i class="ti ti-trash"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MOBILE ═══ -->
+<div class="mobile">
+  <div class="mob-header">
+    <div class="mob-top">
+      <div class="timer-row" style="margin-top:0">
+        <span class="tval" id="tval-m">0:00</span>
+        <span class="tbadge" id="badge-m">over</span>
+      </div>
+      <div class="mob-target">
+        <span class="target-lbl">Set duration</span>
+        <input class="target-inp" id="target-m" type="text" value="90:00" oninput="updateTimer()" style="width:60px"/>
+        <div class="target-bar-wrap" style="width:55px"><div class="target-bar" id="bar-m" style="width:0%"></div></div>
+        <span class="target-pct" id="pct-m">0%</span>
+      </div>
+    </div>
+    <div class="mob-tabs">
+      <button class="mob-tab active" id="tab-cat" onclick="switchTab('cat')"><i class="ti ti-music"></i> Catalogue</button>
+      <button class="mob-tab" id="tab-set" onclick="switchTab('set')"><i class="ti ti-list"></i> Setlist</button>
+    </div>
+  </div>
+  <div class="mob-panel">
+    <div class="mob-pane active" id="mpane-cat">
+      <div class="scroll" id="cat-m"></div>
+      <div class="lbar"><button class="tbtn wide" onclick="openAddSong()"><i class="ti ti-plus"></i> Add custom song</button></div>
+    </div>
+    <div class="mob-pane" id="mpane-set">
+      <div class="setarea" id="set-m"></div>
+      <div class="tbar">
+        <button class="tbtn flex1" onclick="addBlock()"><i class="ti ti-layout-rows"></i> Block</button>
+        <button class="tbtn flex1" onclick="clearAll()"><i class="ti ti-trash"></i> Clear</button>
+        <button class="tbtn flex1 accent" onclick="exportPDF()"><i class="ti ti-file-text"></i> PDF</button>
+      </div>
+      <div class="sbar">
+        <span class="ver-lbl">Version:</span>
+        <select class="sel-ver" id="ver-m" onchange="loadVersion(this.value)"></select>
+        <button class="tbtn solo" onclick="saveVersion()"><i class="ti ti-device-floppy"></i> Save</button>
+        <button class="tbtn solo" onclick="deleteVersion()"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL ═══ -->
+<div class="modal-bg" id="modal" style="display:none">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <div id="modal-body"></div>
+    <div class="modal-btns">
+      <button class="mbtn" onclick="closeModal()">Cancel</button>
+      <button class="mbtn ok" onclick="confirmModal()">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── jsPDF ───────────────────────────────────────────────────────────────────
+(function(){
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  document.head.appendChild(s);
+})();
+
+// ── DATA ────────────────────────────────────────────────────────────────────
+const ALBUMS=[
+  {name:"Decision & Action",year:"EP · 2004",tracks:[
+    {t:"How To Kill A Feeling And Save A Moment",d:"2:43",tune:"Standard D"},
+    {t:"Decision & Action",d:"3:44",tune:"Standard D"},
+    {t:"Lindbergh Case",d:"2:48",tune:"Standard D"},
+    {t:"The Requiem",d:"3:44",tune:"Drop Ass"},
+    {t:"Ghost From The Past",d:"4:33",tune:"Standard D"},
+  ]},
+  {name:"Crush/Rebuild",year:"Album · 2005",tracks:[
+    {t:"Return To The End",d:"3:27",tune:"Standard D"},
+    {t:"Fracture",d:"1:45",tune:"Drop C"},
+    {t:"The Progress",d:"3:41",tune:"Standard D"},
+    {t:"Varnished View",d:"3:29",tune:"Standard D"},
+    {t:"Veritas",d:"3:26",tune:"Standard D"},
+    {t:"CTRL+ALT+DEL",d:"1:47",tune:"Standard D"},
+    {t:"Abyss",d:"3:46",tune:"Standard D"},
+    {t:"Type II Supernovae",d:"4:34",tune:"Standard D"},
+    {t:"Induced Sleep",d:"3:37",tune:"Standard D"},
+    {t:"Dressed In Red",d:"3:44",tune:"Standard D"},
+    {t:'There Is No More "Us"',d:"3:46",tune:"Standard D"},
+    {t:"With Bare Fists Against Concrete",d:"4:02",tune:"Standard D"},
+  ]},
+  {name:"I'll Beat You, City!",year:"Album · 2006",tracks:[
+    {t:"Being Victimized Is A Two Way Street",d:"1:54",tune:"Standard D"},
+    {t:"Bonfire Now",d:"2:53",tune:"Standard D"},
+    {t:"One Problem And Counting",d:"3:37",tune:"Standard D"},
+    {t:"An Audience Of One",d:"3:46",tune:"Standard D"},
+    {t:"Wiretapping With Benefits",d:"3:16",tune:"Standard D"},
+    {t:"The City",d:"3:01",tune:"Drop C"},
+    {t:"An Ode To Self Defense",d:"2:52",tune:"Standard D"},
+    {t:"At Gunpoint, At Stake",d:"2:53",tune:"Standard D"},
+    {t:"Three, Two, Square One, Go",d:"2:45",tune:"Standard D"},
+    {t:"Deaf Mute Blind Passenger",d:"2:57",tune:"Standard D"},
+    {t:"Eight Six It All",d:"4:54",tune:"Standard D"},
+    {t:"Duly Noted",d:"2:50",tune:"Standard D"},
+  ]},
+  {name:"Cum Grano Salis",year:"Album · 2008",tracks:[
+    {t:"Electric Arc",d:"2:48",tune:"Standard D"},
+    {t:"Senses Riding Shotgun",d:"3:05",tune:"Standard D"},
+    {t:"Benchwarmer",d:"3:04",tune:"Standard D"},
+    {t:"Sleep! Don't Breath!",d:"3:26",tune:"Standard D"},
+    {t:"B.Y.O.O. (Bring Your Own Organs)",d:"3:30",tune:"Standard D"},
+    {t:"Fake It Like You Mean It",d:"3:18",tune:"Standard D"},
+    {t:"Readapting",d:"3:10",tune:"Standard D"},
+    {t:"Cheers to You, Mrs. Ford",d:"3:36",tune:"Standard D"},
+    {t:"Gilgamesh, What Have We Done?",d:"1:46",tune:"Standard D"},
+    {t:"The Cocoon",d:"2:43",tune:"Standard D"},
+    {t:"There's a Leak!",d:"3:37",tune:"Standard D"},
+  ]},
+  {name:"Fire In The Attic",year:"Album · 2009",tracks:[
+    {t:"Are We There Yet?",d:"4:18",tune:"Standard D"},
+    {t:"Running With Scissors",d:"2:49",tune:"Standard D"},
+    {t:"Wide Eyes",d:"3:23",tune:"Standard D"},
+    {t:"Heartbeats for Paychecks",d:"1:28",tune:"Standard D"},
+    {t:"Clockworks",d:"3:40",tune:"Standard D"},
+    {t:"Emergency Exit",d:"2:45",tune:"Standard D"},
+    {t:"The Failure, Pt. I - The Nightmare",d:"3:47",tune:"Standard D"},
+    {t:"The Failure, Pt. II - The Hangover",d:"3:00",tune:"Standard D"},
+    {t:"A Call Into Arms",d:"3:35",tune:"Standard D"},
+    {t:"Sinking (Relation)ship",d:"4:06",tune:"Standard D"},
+    {t:"Call It Quits",d:"1:49",tune:"Standard D"},
+    {t:"Imperfection Is Infinite",d:"4:09",tune:"Standard D"},
+    {t:"Shapeshifting Mountain",d:"3:05",tune:"Standard D"},
+  ]},
+];
+const TUNINGS=["Standard D","Drop C","Drop Ass"];
+
+// ── STATE ───────────────────────────────────────────────────────────────────
+let customSongs=[],durOverrides={},tuneOverrides={},setlist=[],blockCount=0,dragSrcId=null,versions={},activeVer=null,modalCb=null;
+
+// ── UTILS ───────────────────────────────────────────────────────────────────
+const uid=()=>Math.random().toString(36).slice(2)+Date.now().toString(36);
+function parseSecs(d){if(!d||!d.includes(':'))return 0;const[m,s]=d.split(':');return+m*60+ +s;}
+function fmtTime(s){const m=Math.floor(s/60),sec=s%60;return m+':'+(sec<10?'0':'')+sec;}
+function tuneClass(t){return t==='Drop Ass'?'ta':t==='Drop C'?'td':'ts';}
+function isSelected(t){return setlist.some(x=>x.type==='song'&&x.title===t);}
+function getDur(t){if(durOverrides[t])return durOverrides[t];for(const a of ALBUMS)for(const tr of a.tracks)if(tr.t===t)return tr.d;for(const s of customSongs)if(s.t===t)return s.d;return'0:00';}
+function getTune(t){if(tuneOverrides[t])return tuneOverrides[t];for(const a of ALBUMS)for(const tr of a.tracks)if(tr.t===t)return tr.tune;for(const s of customSongs)if(s.t===t)return s.tune;return'Standard D';}
+
+// ── TABS ────────────────────────────────────────────────────────────────────
+function switchTab(tab){
+  ['cat','set'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+    document.getElementById('mpane-'+t).classList.toggle('active',t===tab);
+  });
+}
+
+// ── MODAL ───────────────────────────────────────────────────────────────────
+function openModal(title,html,cb){
+  document.getElementById('modal-title').textContent=title;
+  document.getElementById('modal-body').innerHTML=html;
+  modalCb=cb;
+  document.getElementById('modal').style.display='flex';
+  const first=document.querySelector('#modal-body input,#modal-body select');
+  if(first)setTimeout(()=>first.focus(),50);
+  document.onkeydown=e=>{if(e.key==='Enter')confirmModal();if(e.key==='Escape')closeModal();};
+}
+function closeModal(){document.getElementById('modal').style.display='none';modalCb=null;document.onkeydown=null;}
+function confirmModal(){if(modalCb)modalCb();closeModal();}
+
+// ── ADD SONG ─────────────────────────────────────────────────────────────────
+function openAddSong(){
+  openModal('Add custom song',
+    `<input id="mi-t" placeholder="Song title" style="margin-bottom:6px"/>
+     <input id="mi-d" placeholder="Duration e.g. 3:30" style="margin-bottom:6px"/>
+     <select id="mi-tune">${TUNINGS.map(t=>`<option>${t}</option>`).join('')}</select>`,
+    ()=>{
+      const t=document.getElementById('mi-t').value.trim();
+      if(!t)return;
+      customSongs.push({t,d:document.getElementById('mi-d').value.trim()||'3:00',tune:document.getElementById('mi-tune').value});
+      render();
+    });
+}
+function editDuration(id){
+  const item=setlist.find(x=>x.id===id);if(!item)return;
+  openModal(`Edit duration`,`<input id="mi-d" value="${item.dur}" placeholder="3:30"/>`,()=>{
+    const v=document.getElementById('mi-d').value.trim();
+    if(!v||!v.includes(':'))return;
+    durOverrides[item.title]=v;item.dur=v;render();
+  });
+}
+function editTuning(id){
+  const item=setlist.find(x=>x.id===id);if(!item)return;
+  openModal('Edit tuning',
+    `<select id="mi-tune">${TUNINGS.map(t=>`<option${t===item.tune?' selected':''}>${t}</option>`).join('')}</select>`,
+    ()=>{const v=document.getElementById('mi-tune').value;tuneOverrides[item.title]=v;item.tune=v;render();});
+}
+function editBlockLabel(id){
+  const item=setlist.find(x=>x.id===id);if(!item)return;
+  openModal('Rename block',`<input id="mi-l" value="${item.label||'Block '+item.num}"/>`,()=>{
+    const v=document.getElementById('mi-l').value.trim();if(!v)return;item.label=v;renderBoth();
+  });
+}
+function editBlockPause(id){
+  const item=setlist.find(x=>x.id===id);if(!item)return;
+  openModal('Pause duration',`<input id="mi-p" value="${item.pause||'3:00'}" placeholder="3:00"/>`,()=>{
+    const v=document.getElementById('mi-p').value.trim();if(!v)return;
+    item.pause=v.includes(':')?v:(parseInt(v)||3)+':00';renderBoth();updateTimer();
+  });
+}
+
+// ── BUILD CATALOGUE ──────────────────────────────────────────────────────────
+function buildCat(id){
+  const el=document.getElementById(id);el.innerHTML='';
+  [...ALBUMS,...(customSongs.length?[{name:'Custom',year:'',tracks:customSongs}]:[])].forEach(grp=>{
+    const lbl=document.createElement('div');lbl.className='alb-lbl';
+    lbl.innerHTML=`${grp.name}${grp.year?`<span class="alb-year">${grp.year}</span>`:''}`;
+    el.appendChild(lbl);
+    grp.tracks.forEach(tr=>{
+      const sel=isSelected(tr.t),dur=getDur(tr.t),tune=getTune(tr.t);
+      const row=document.createElement('div');row.className='si'+(sel?' sel':'');
+      row.innerHTML=`<div class="abtn">${sel?'<i class="ti ti-x"></i>':'<i class="ti ti-plus"></i>'}</div><span class="stitle">${tr.t}</span><span class="sdur">${dur}</span><span class="stune ${tuneClass(tune)}">${tune}</span>`;
+      row.onclick=()=>toggleSong(tr.t,dur,tune,grp.name);
+      el.appendChild(row);
+    });
+  });
+}
+
+// ── TOGGLE SONG ──────────────────────────────────────────────────────────────
+function toggleSong(title,dur,tune,album){
+  isSelected(title)
+    ?setlist=setlist.filter(x=>!(x.type==='song'&&x.title===title))
+    :setlist.push({type:'song',title,dur:durOverrides[title]||dur,tune:tuneOverrides[title]||tune,album,id:uid()});
+  render();
+}
+
+// ── TIMER ────────────────────────────────────────────────────────────────────
+function updateTimer(){
+  let s=0;setlist.forEach(x=>{if(x.type==='song')s+=parseSecs(x.dur);if(x.type==='block')s+=parseSecs(x.pause||'3:00');});
+  ['d','m'].forEach(sfx=>{
+    const tv=document.getElementById('tval-'+sfx);if(!tv)return;
+    const ob=document.getElementById('badge-'+sfx);
+    const inp=document.getElementById('target-'+sfx);
+    const ts=parseSecs((inp?.value||'90:00').includes(':')?inp.value:'90:00');
+    tv.textContent=fmtTime(s);
+    if(ts>0){
+      const over=s>ts,ratio=Math.min(s/ts,1);
+      document.getElementById('bar-'+sfx).style.width=(ratio*100)+'%';
+      document.getElementById('bar-'+sfx).className='target-bar'+(s>ts*.95&&!over?' warn':over?' over':'');
+      document.getElementById('pct-'+sfx).textContent=Math.round(s/ts*100)+'%';
+      tv.classList.toggle('over',over);ob.classList.toggle('show',over);
+    } else {
+      document.getElementById('bar-'+sfx).style.width='0%';
+      document.getElementById('pct-'+sfx).textContent='';
+      tv.classList.remove('over');ob.classList.remove('show');
+    }
+  });
+}
+
+// ── DRAG & DROP ───────────────────────────────────────────────────────────────
+function addDrag(el,item){
+  el.addEventListener('dragstart',e=>{dragSrcId=item.id;setTimeout(()=>el.classList.add('dragging'),0);e.dataTransfer.effectAllowed='move';});
+  el.addEventListener('dragend',()=>{el.classList.remove('dragging');document.querySelectorAll('.dot,.dob').forEach(x=>x.classList.remove('dot','dob'));});
+  el.addEventListener('dragover',e=>{e.preventDefault();document.querySelectorAll('.dot,.dob').forEach(x=>x.classList.remove('dot','dob'));const mid=el.getBoundingClientRect().top+el.getBoundingClientRect().height/2;el.classList.add(e.clientY<mid?'dot':'dob');});
+  el.addEventListener('dragleave',()=>el.classList.remove('dot','dob'));
+  el.addEventListener('drop',e=>{
+    e.preventDefault();el.classList.remove('dot','dob');
+    if(!dragSrcId||dragSrcId===item.id)return;
+    const fi=setlist.findIndex(x=>x.id===dragSrcId),ti=setlist.findIndex(x=>x.id===item.id);
+    if(fi<0||ti<0)return;
+    const after=e.clientY>=el.getBoundingClientRect().top+el.getBoundingClientRect().height/2;
+    const moved=setlist.splice(fi,1)[0];
+    setlist.splice(setlist.findIndex(x=>x.id===item.id)+(after?1:0),0,moved);
+    dragSrcId=null;render();
+  });
+}
+
+// ── BUILD SETLIST ─────────────────────────────────────────────────────────────
+function buildSet(id){
+  const sl=document.getElementById(id);sl.innerHTML='';
+  if(!setlist.length){sl.innerHTML='<div class="empty"><i class="ti ti-music"></i><span>Click songs on the left to build your setlist</span></div>';return;}
+  let sn=0,prevTune=null;
+  setlist.forEach(item=>{
+    if(item.type==='block'){
+      const el=document.createElement('div');el.className='blk-item';el.draggable=true;
+      el.innerHTML=`<span class="bgh"><i class="ti ti-grip-vertical"></i></span><div class="bline"></div><span class="blabel" onclick="editBlockLabel('${item.id}')">${item.label||'Block '+item.num}</span><span class="bpause" onclick="editBlockPause('${item.id}')"><i class="ti ti-coffee"></i> ${item.pause||'3:00'}</span><div class="bline"></div><button class="srm" onclick="removeById('${item.id}')"><i class="ti ti-x"></i></button>`;
+      addDrag(el,item);sl.appendChild(el);prevTune=null;
+    } else {
+      sn++;const retune=prevTune&&prevTune!==item.tune;prevTune=item.tune;
+      const el=document.createElement('div');el.className='sitem';el.draggable=true;
+      el.innerHTML=`<span class="gh"><i class="ti ti-grip-vertical"></i></span><span class="snum">${sn}</span><span class="sttl" title="${item.title}">${item.title}</span>${retune?'<span class="rtbadge">retune</span>':''}<span class="stune2 ${tuneClass(item.tune)}" onclick="editTuning('${item.id}')" title="Click to edit tuning">${item.tune}</span><span class="sdur2" onclick="editDuration('${item.id}')" title="Click to edit duration">${item.dur}</span><button class="srm" onclick="removeById('${item.id}')"><i class="ti ti-x"></i></button>`;
+      addDrag(el,item);sl.appendChild(el);
+    }
+  });
+}
+
+function renderBoth(){buildSet('set-d');buildSet('set-m');}
+function render(){buildCat('cat-d');buildCat('cat-m');buildSet('set-d');buildSet('set-m');updateTimer();}
+function removeById(id){setlist=setlist.filter(x=>x.id!==id);render();}
+function addBlock(){blockCount++;setlist.push({type:'block',num:blockCount,label:'Block '+blockCount,pause:'3:00',id:uid()});renderBoth();updateTimer();}
+function clearAll(){setlist=[];blockCount=0;render();}
+
+// ── VERSIONS ──────────────────────────────────────────────────────────────────
+function refreshVers(){
+  const opts='<option value="">— unsaved —</option>'+Object.keys(versions).map(k=>`<option value="${k}"${k===activeVer?' selected':''}>${k}</option>`).join('');
+  ['ver-d','ver-m'].forEach(id=>document.getElementById(id).innerHTML=opts);
+}
+function saveVersion(){
+  openModal('Save version as',`<input id="mi-v" value="${activeVer||'Setlist '+(Object.keys(versions).length+1)}"/>`,()=>{
+    const name=document.getElementById('mi-v').value.trim();if(!name)return;
+    versions[name]=JSON.parse(JSON.stringify({setlist,blockCount,durOverrides,tuneOverrides,customSongs}));
+    activeVer=name;refreshVers();
+  });
+}
+function loadVersion(name){
+  if(!name||!versions[name])return;
+  const v=versions[name];
+  setlist=JSON.parse(JSON.stringify(v.setlist));blockCount=v.blockCount;
+  durOverrides=v.durOverrides||{};tuneOverrides=v.tuneOverrides||{};customSongs=v.customSongs||[];
+  activeVer=name;render();
+}
+function deleteVersion(){
+  const sel=document.getElementById('ver-d').value||document.getElementById('ver-m').value;
+  if(!sel||!versions[sel])return;
+  delete versions[sel];if(activeVer===sel)activeVer=null;refreshVers();
+}
+
+// ── PDF EXPORT ────────────────────────────────────────────────────────────────
+function exportPDF(){
+  const jsPDF=(window.jspdf&&window.jspdf.jsPDF)||window.jsPDF;
+  if(!jsPDF){alert('PDF library is still loading – please try again in a moment.');return;}
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const PW=210,ML=18,MR=18;let y=22;
+  doc.setFillColor(26,26,46);doc.rect(0,0,PW,16,'F');
+  doc.setTextColor(240,240,240);doc.setFontSize(13);doc.setFont('helvetica','bold');
+  doc.text('FIRE IN THE ATTIC  –  SETLIST',ML,11);
+  let tot=0;setlist.forEach(x=>{if(x.type==='song')tot+=parseSecs(x.dur);if(x.type==='block')tot+=parseSecs(x.pause||'3:00');});
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.text('Total: '+fmtTime(tot),PW-MR,11,{align:'right'});
+  let sn=0,prevTune=null;
+  setlist.forEach(item=>{
+    if(y>277){doc.addPage();y=18;}
+    if(item.type==='block'){
+      y+=3;doc.setDrawColor(160,160,160);doc.setLineWidth(0.3);doc.line(ML,y,PW-MR,y);
+      doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(100,100,120);
+      doc.text((item.label||'Block '+item.num)+' – pause '+(item.pause||'3:00'),PW/2,y-1,{align:'center'});
+      y+=6;prevTune=null;
+    } else {
+      sn++;const retune=prevTune&&prevTune!==item.tune;prevTune=item.tune;
+      if(sn%2===0){doc.setFillColor(245,245,248);doc.rect(ML-2,y-4,PW-ML-MR+4,7,'F');}
+      doc.setFontSize(10);doc.setFont('helvetica','bold');doc.setTextColor(30,30,50);
+      doc.text(String(sn)+'.',ML,y);
+      doc.setFont('helvetica','normal');
+      const maxW=PW-ML-MR-7-22-22;
+      let title=item.title;
+      while(doc.getTextWidth(title)>maxW&&title.length>8)title=title.slice(0,-2);
+      if(title!==item.title)title=title.trim()+'…';
+      doc.text(title,ML+7,y);
+      doc.setTextColor(120,120,130);doc.setFontSize(8);doc.text(item.dur,PW-MR-22,y);
+      const tc=item.tune==='Drop Ass'?[180,40,40]:item.tune==='Drop C'?[180,120,20]:[80,120,80];
+      doc.setTextColor(...tc);doc.text(item.tune,PW-MR,y,{align:'right'});
+      if(retune){doc.setTextColor(200,140,0);doc.setFontSize(7);doc.text('↑ retune',PW-MR-22,y+3.5);}
+      y+=7;
+    }
+  });
+  y+=6;doc.setDrawColor(200,200,200);doc.setLineWidth(0.3);doc.line(ML,y,PW-MR,y);
+  doc.setFontSize(8);doc.setTextColor(150,150,150);doc.setFont('helvetica','italic');
+  doc.text('Generated '+new Date().toLocaleDateString('de-DE')+' · '+fmtTime(tot)+' total',ML,y+5);
+  doc.save('FITA_Setlist.pdf');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+refreshVers();render();
+</script>
+</body>
+</html>
