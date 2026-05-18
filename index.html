@@ -208,7 +208,7 @@
     </div>
     <div class="scroll" id="cat-d"></div>
     <div class="lbar">
-      <button class="tbtn wide" onclick="openAddSong()"><i class="ti ti-plus"></i> Add custom song</button>
+      <button class="tbtn wide" onclick="openAddSong()">+ Add custom song</button>
     </div>
   </div>
   <!-- RIGHT: Setlist -->
@@ -228,15 +228,16 @@
     </div>
     <div class="setarea" id="set-d"></div>
     <div class="tbar">
-      <button class="tbtn flex1" onclick="addBlock()"><i class="ti ti-layout-rows"></i> Block break</button>
-      <button class="tbtn flex1" onclick="clearAll()"><i class="ti ti-trash"></i> Clear</button>
-      <button class="tbtn flex1 accent" onclick="exportPDF()"><i class="ti ti-file-text"></i> Print / PDF</button>
+      <button class="tbtn flex1" onclick="addBlock()">&#9776; Block break</button>
+      <button class="tbtn flex1" onclick="clearAll()">&#128465; Clear</button>
+      <button class="tbtn flex1 accent" onclick="exportPDF()">&#128438; Print / PDF</button>
     </div>
     <div class="sbar">
       <span class="ver-lbl">Version:</span>
       <select class="sel-ver" id="ver-d" onchange="loadVersion(this.value)"></select>
-      <button class="tbtn solo" onclick="saveVersion()"><i class="ti ti-device-floppy"></i> Save</button>
-      <button class="tbtn solo" onclick="deleteVersion()"><i class="ti ti-trash"></i></button>
+      <button class="tbtn solo" onclick="saveVersion()">&#128190; Save</button>
+      <button class="tbtn solo" onclick="deleteVersion()">&#128465; Del</button>
+      <span id="fb-status" style="font-size:10px;color:var(--color-text-success);margin-left:4px;transition:opacity 1.5s;opacity:0"></span>
     </div>
   </div>
 </div>
@@ -264,20 +265,20 @@
   <div class="mob-panel">
     <div class="mob-pane active" id="mpane-cat">
       <div class="scroll" id="cat-m"></div>
-      <div class="lbar"><button class="tbtn wide" onclick="openAddSong()"><i class="ti ti-plus"></i> Add custom song</button></div>
+      <div class="lbar"><button class="tbtn wide" onclick="openAddSong()">+ Add custom song</button></div>
     </div>
     <div class="mob-pane" id="mpane-set">
       <div class="setarea" id="set-m"></div>
       <div class="tbar">
-        <button class="tbtn flex1" onclick="addBlock()"><i class="ti ti-layout-rows"></i> Block</button>
-        <button class="tbtn flex1" onclick="clearAll()"><i class="ti ti-trash"></i> Clear</button>
-        <button class="tbtn flex1 accent" onclick="exportPDF()"><i class="ti ti-file-text"></i> PDF</button>
+        <button class="tbtn flex1" onclick="addBlock()">&#9776; Block</button>
+        <button class="tbtn flex1" onclick="clearAll()">&#128465; Clear</button>
+        <button class="tbtn flex1 accent" onclick="exportPDF()">&#128438; PDF</button>
       </div>
       <div class="sbar">
         <span class="ver-lbl">Version:</span>
         <select class="sel-ver" id="ver-m" onchange="loadVersion(this.value)"></select>
-        <button class="tbtn solo" onclick="saveVersion()"><i class="ti ti-device-floppy"></i> Save</button>
-        <button class="tbtn solo" onclick="deleteVersion()"><i class="ti ti-trash"></i></button>
+        <button class="tbtn solo" onclick="saveVersion()">&#128190; Save</button>
+        <button class="tbtn solo" onclick="deleteVersion()">&#128465; Del</button>
       </div>
     </div>
   </div>
@@ -422,14 +423,14 @@ function editDuration(id){
   openModal(`Edit duration`,`<input id="mi-d" value="${item.dur}" placeholder="3:30"/>`,()=>{
     const v=document.getElementById('mi-d').value.trim();
     if(!v||!v.includes(':'))return;
-    durOverrides[item.title]=v;item.dur=v;render();
+    durOverrides[item.title]=v;item.dur=v;render();saveOverridesDebounced();
   });
 }
 function editTuning(id){
   const item=setlist.find(x=>x.id===id);if(!item)return;
   openModal('Edit tuning',
     `<select id="mi-tune">${TUNINGS.map(t=>`<option${t===item.tune?' selected':''}>${t}</option>`).join('')}</select>`,
-    ()=>{const v=document.getElementById('mi-tune').value;tuneOverrides[item.title]=v;item.tune=v;render();});
+    ()=>{const v=document.getElementById('mi-tune').value;tuneOverrides[item.title]=v;item.tune=v;render();saveOverridesDebounced();});
 }
 function editBlockLabel(id){
   const item=setlist.find(x=>x.id===id);if(!item)return;
@@ -544,8 +545,9 @@ function refreshVers(){
 function saveVersion(){
   openModal('Save version as',`<input id="mi-v" value="${activeVer||'Setlist '+(Object.keys(versions).length+1)}"/>`,()=>{
     const name=document.getElementById('mi-v').value.trim();if(!name)return;
-    versions[name]=JSON.parse(JSON.stringify({setlist,blockCount,durOverrides,tuneOverrides,customSongs}));
-    activeVer=name;refreshVers();
+    const data=JSON.parse(JSON.stringify({setlist,blockCount,durOverrides,tuneOverrides,customSongs}));
+    versions[name]=data;activeVer=name;refreshVers();
+    fbSet('/versions/'+encodeURIComponent(name),data).then(()=>showSt('✓ Saved',true));
   });
 }
 function loadVersion(name){
@@ -559,6 +561,7 @@ function deleteVersion(){
   const sel=document.getElementById('ver-d').value||document.getElementById('ver-m').value;
   if(!sel||!versions[sel])return;
   delete versions[sel];if(activeVer===sel)activeVer=null;refreshVers();
+  fbDel('/versions/'+encodeURIComponent(sel)).then(()=>showSt('✓ Deleted',true));
 }
 
 // ── PDF EXPORT ────────────────────────────────────────────────────────────────
@@ -605,7 +608,42 @@ function exportPDF(){
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-refreshVers();render();
+
+// ── Firebase REST helpers ──────────────────────────────────────────
+var FB_FITA='https://fita-setliste-default-rtdb.europe-west1.firebasedatabase.app';
+function fbGet(p){return fetch(FB_FITA+p+'.json').then(function(r){return r.ok?r.json():null;}).catch(function(){return null;});}
+function fbSet(p,d){return fetch(FB_FITA+p+'.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).catch(function(){});}
+function fbDel(p){return fetch(FB_FITA+p+'.json',{method:'DELETE'}).catch(function(){});}
+function showSt(msg,ok){var el=document.getElementById('fb-status');if(!el)return;el.textContent=msg;el.style.color=ok?'var(--color-text-success)':'var(--color-text-danger)';el.style.opacity=1;clearTimeout(showSt._t);showSt._t=setTimeout(function(){el.style.opacity=0;},2500);}
+
+// ── Override storage (dur, tuning) ────────────────────────────────
+if(typeof durOverrides==='undefined')var durOverrides={};
+if(typeof tuneOverrides==='undefined')var tuneOverrides={};
+
+function saveOverridesDebounced(){
+  clearTimeout(saveOverridesDebounced._t);
+  saveOverridesDebounced._t=setTimeout(function(){
+    fbSet('/overrides',{dur:durOverrides,tune:tuneOverrides}).then(function(){showSt('✓ Saved',true);});
+  },800);
+}
+
+// ── Init: render immediately then load Firebase ──────────────────
+refreshVers();
+render();
+(function(){
+  Promise.all([fbGet('/overrides'),fbGet('/versions')]).then(function(results){
+    var ov=results[0],vs=results[1];
+    if(ov){
+      if(ov.dur)Object.assign(durOverrides,ov.dur);
+      if(ov.tune)Object.assign(tuneOverrides,ov.tune);
+    }
+    if(vs){
+      Object.keys(vs).forEach(function(k){versions[decodeURIComponent(k)]=vs[k];});
+    }
+    refreshVers();render();
+    showSt('✓ Connected',true);
+  }).catch(function(){showSt('offline',false);});
+})();
 </script>
 </body>
 </html>
